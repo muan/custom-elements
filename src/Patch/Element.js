@@ -237,14 +237,15 @@ export default function(internals) {
        */
       function(where, html) {
         baseMethod.call(this, where, html);
+        where = where.toLowerCase();
 
-        const baseElement = /** @type {!Element} */
-          (where === 'beforebegin' || where === 'afterend' ? this.parentElement : this);
+        const baseNode = (where === 'beforebegin' || where === 'afterend') ?
+          /** @type {!Node} */ (this.parentNode) : this;
 
-        if (!baseElement.ownerDocument.__CE_hasRegistry) {
-          internals.patchTree(baseElement);
+        if (!baseNode.ownerDocument.__CE_hasRegistry) {
+          internals.patchTree(baseNode);
         } else {
-          internals.patchAndUpgradeTree(baseElement);
+          internals.patchAndUpgradeTree(baseNode);
         }
       });
   }
