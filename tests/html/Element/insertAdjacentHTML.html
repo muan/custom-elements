@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+<title>Element#insertAdjacentHTML</title>
+<script>
+  (window.customElements = window.customElements || {}).forcePolyfill = true;
+</script>
+<script src="../../../../es6-promise/dist/es6-promise.auto.min.js"></script>
+<script src="../../../../web-component-tester/browser.js"></script>
+<script src="../../../custom-elements.min.js"></script>
+</head>
+<body>
+<script>
+function generateLocalName() {
+  return 'test-element-' + Math.random().toString(32).substring(2);
+}
+
+function defineWithLocalName(localName, observedAttributes) {
+  customElements.define(localName, class extends HTMLElement {
+    constructor() {
+      super();
+      this.constructed = true;
+      this.connectedCallbackCount = 0;
+      this.disconnectedCallbackCount = 0;
+    }
+
+    connectedCallback() {
+      this.connectedCallbackCount++;
+    }
+
+    disconnectedCallback() {
+      this.disconnectedCallbackCount++;
+    }
+  });
+}
+
+suite('Custom elements in HTML strings are created using `insertAdjacentHTML`.', function() {
+  let localName;
+
+  setup(function() {
+    localName = generateLocalName();
+    defineWithLocalName(localName);
+  });
+
+  test('Disconnected context for beforend', function() {
+    const div = document.createElement('div');
+    div.insertAdjacentHTML('beforeend', `<${localName}></${localName}>`);
+
+    assert.equal(div.childNodes.length, 1);
+    assert.equal(div.childNodes[0].localName, localName);
+    assert.equal(div.childNodes[0].constructed, true);
+    assert.equal(div.childNodes[0].connectedCallbackCount, 0);
+    assert.equal(div.childNodes[0].disconnectedCallbackCount, 0);
+  });
+
+  test('Connected context for beforeend', function() {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    div.insertAdjacentHTML('beforeend', `<${localName}></${localName}>`);
+
+    assert.equal(div.childNodes.length, 1);
+    assert.equal(div.childNodes[0].localName, localName);
+    assert.equal(div.childNodes[0].constructed, true);
+    assert.equal(div.childNodes[0].connectedCallbackCount, 1);
+    assert.equal(div.childNodes[0].disconnectedCallbackCount, 0);
+
+    document.body.removeChild(div);
+  });
+
+  test('Connected context for afterend', function() {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    const childNodeCount = document.body.childNodes.length
+    div.insertAdjacentHTML('afterend', `<${localName}></${localName}>`);
+    const localEl = document.querySelector(localName)
+
+    assert.equal(document.body.childNodes.length, childNodeCount + 1);
+    assert.equal(localEl.localName, localName);
+    assert.equal(localEl.constructed, true);
+    assert.equal(localEl.connectedCallbackCount, 1);
+    assert.equal(localEl.disconnectedCallbackCount, 0);
+
+    document.body.removeChild(div);
+    document.body.removeChild(localEl);
+  });
+});
+</script>
+</body>
+</html>

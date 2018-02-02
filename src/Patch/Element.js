@@ -228,6 +228,35 @@ export default function(internals) {
     console.warn('Custom Elements: `Element#insertAdjacentElement` was not patched.');
   }
 
+  function patch_insertAdjacentHTML(destination, baseMethod) {
+    Utilities.setPropertyUnchecked(destination, 'insertAdjacentHTML',
+      /**
+       * @this {Element}
+       * @param {string} where
+       * @param {string} html
+       */
+      function(where, html) {
+        baseMethod.call(this, where, html);
+
+        const baseElement = /** @type {!Element} */
+          (where === 'beforebegin' || where === 'afterend' ? this.parentElement : this);
+
+        if (!baseElement.ownerDocument.__CE_hasRegistry) {
+          internals.patchTree(baseElement);
+        } else {
+          internals.patchAndUpgradeTree(baseElement);
+        }
+      });
+  }
+
+  if (Native.HTMLElement_insertAdjacentHTML) {
+    patch_insertAdjacentHTML(HTMLElement.prototype, Native.HTMLElement_insertAdjacentHTML);
+  } else if (Native.Element_insertAdjacentHTML) {
+    patch_insertAdjacentHTML(Element.prototype, Native.Element_insertAdjacentHTML);
+  } else {
+    console.warn('Custom Elements: `Element#insertAdjacentHTML` was not patched.');
+  }
+
 
   PatchParentNode(internals, Element.prototype, {
     prepend: Native.Element_prepend,
